@@ -20,34 +20,6 @@ from tqdm import tqdm
 """
 
 
-def parse_numeric(val):
-    """Try to cast str -> int/float.
-
-    Args:
-        val (str)
-    """
-    try: return int(val)
-    except: pass
-
-    try: return float(val)
-    except: pass
-
-    return val
-
-
-def parse_datetime(val):
-    """Try to cast str -> datetime.
-    """
-    try:
-        return maya.parse(val).datetime()
-    except:
-        return val
-
-
-def split_mime(text):
-    return text.split(';')[0]
-
-
 NAMESPACES = {
     'dcterms': 'http://purl.org/dc/terms/',
     'pgterms': 'http://www.gutenberg.org/2009/pgterms/',
