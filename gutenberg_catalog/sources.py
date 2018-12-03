@@ -1,8 +1,10 @@
 
 
+import ujson
+
 from lxml import etree
 
-from .utils import safe_property, parse_numeric
+from .utils import safe_property, parse_numeric, split_mime, parse_datetime
 
 
 NAMESPACES = {
@@ -86,9 +88,13 @@ class Format(Tree):
 
 class BookXML(Tree):
 
+    _json_keys = ('id', 'title', 'creators', 'author', 'surname',
+        'subjects', 'formats', 'links', 'bookshelves', 'issued', 'rights',
+        'downloads', 'publisher', 'language',)
+
     @safe_property
     def id(self):
-        raw = xpath('//pgterms:ebook/@rdf:about', first=True)
+        raw = self.xpath('//pgterms:ebook/@rdf:about', first=True)
         return int(raw.split('/')[-1])
 
     @safe_property
@@ -129,3 +135,46 @@ class BookXML(Tree):
     @safe_property.cached
     def formats(self):
         return list(self.formats_iter())
+
+    @safe_property
+    def links(self):
+        """Map mime type -> download URL.
+        """
+        return {
+            split_mime(f['formats'][0]): f['url']
+            for f in self.formats
+            if len(f['formats'])==1
+        }
+
+    @safe_property
+    def bookshelves(self):
+        return self.xpath('//pgterms:bookshelf//rdf:value/text()')
+
+    @safe_property
+    def issued(self):
+        return self.xpath('//dcterms:issued/text()', first=True,
+            parser=parse_datetime)
+
+    @safe_property
+    def rights(self):
+        return self.xpath('//dcterms:rights/text()', first=True)
+
+    @safe_property
+    def downloads(self):
+        return self.xpath('//pgterms:downloads/text()', first=True,
+            parser=parse_numeric)
+
+    @safe_property
+    def language(self):
+        return self.xpath('//dcterms:language//rdf:value/text()', first=True)
+
+    @safe_property
+    def publisher(self):
+        return self.xpath('//dcterms:publisher/text()', first=True)
+
+    def __iter__(self):
+        for key in self._json_keys:
+            yield key, getattr(self, key)
+
+    def to_json(self):
+        return ujson.dumps(dict(self))
