@@ -92,6 +92,9 @@ class BookXML(Tree):
         'subjects', 'formats', 'links', 'bookshelves', 'issued', 'rights',
         'downloads', 'publisher', 'language',)
 
+    def __repr__(self):
+        return '%s<%d>' % (self.__class__.__name__, self.id)
+
     @safe_property
     def id(self):
         raw = self.xpath('//pgterms:ebook/@rdf:about', first=True)

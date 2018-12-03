@@ -25,7 +25,7 @@ class safe_property:
         try:
             value = self.func(obj)
         except Exception as e:
-            logger.warn('%s | %s' % (self.func, e))
+            logger.warn('%s | %s | %s' % (obj, self.func.__name__, e))
             value = None
 
         # Replace attribute with computed value.
