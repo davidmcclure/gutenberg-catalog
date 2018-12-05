@@ -14,11 +14,11 @@ from . import logger
 NAMESPACES = {
     'dcterms': 'http://purl.org/dc/terms/',
     'pgterms': 'http://www.gutenberg.org/2009/pgterms/',
-    'rdf': 'http://www.w3.org/1999/02/22-rdf-syntax-ns',
+    'rdf': 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
 }
 
 
-def xpath(root, query, first=False, parser=None):
+def xpath(root, query, parser=None, first=False):
     """Query text.
     """
     res = root.xpath(query, namespaces=NAMESPACES)
@@ -57,6 +57,30 @@ class Agent(Tree):
     def term_names(self):
         return [etree.QName(el.tag).localname for el in self.terms()]
 
+    def name(self):
+        return self.xpath('//pgterms:name/text()', first=True)
+
+    def aliases(self):
+        return self.xpath('//pgterms:alias/text()')
+
+    def birthdate(self):
+        return self.xpath('//pgterms:birthdate/text()', int, first=True)
+
+    def deathdate(self):
+        return self.xpath('//pgterms:deathdate/text()', int, first=True)
+
+    def webpage(self):
+        return self.xpath('//pgterms:webpage/@rdf:resource', first=True)
+
+    def row(self):
+        return dict(
+            name=self.name(),
+            aliases=self.aliases(),
+            birthdate=self.birthdate(),
+            deathdate=self.deathdate(),
+            webpage=self.webpage(),
+        )
+
 
 # class Format(Tree):
 #
@@ -86,12 +110,10 @@ class BookXML(Tree):
     def __repr__(self):
         return '%s<%d>' % (self.__class__.__name__, self.id)
 
-    @property
     def id(self):
         raw = self.xpath('//pgterms:ebook/@rdf:about', first=True)
         return int(raw.split('/')[-1])
 
-    @property
     def title(self):
         return self.xpath('//dcterms:title/text()', first=True)
 
@@ -100,6 +122,10 @@ class BookXML(Tree):
         """
         for el in self.xpath('//dcterms:creator/pgterms:agent'):
             yield Agent.from_element(el)
+
+    @property
+    def creators(self):
+        return [c.row() for c in self.creators_iter()]
 
     #
     # @safe_property.cached
