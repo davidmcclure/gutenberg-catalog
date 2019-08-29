@@ -11,33 +11,6 @@ from .utils import cached_property, parse_numeric, split_mime, parse_datetime
 from . import logger
 
 
-"""
-infer namespaces from root
-iter / dict
-"""
-
-
-NAMESPACES = {
-    'dcterms': 'http://purl.org/dc/terms/',
-    'pgterms': 'http://www.gutenberg.org/2009/pgterms/',
-    'rdf': 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
-}
-
-
-def xpath(root, query, parser=None, first=False):
-    """Query text.
-    """
-    res = root.xpath(query, namespaces=NAMESPACES)
-
-    if parser:
-        res = list(map(parser, res))
-
-    if first:
-        res = res[0] if res else None
-
-    return res
-
-
 class Tree:
 
     _dict_keys = ()
@@ -52,13 +25,24 @@ class Tree:
 
     def __init__(self, root):
         self.root = root
+        self.nsmap = root.getroot().nsmap
 
     def __iter__(self):
         for key in self._dict_keys:
             yield key, getattr(self, key)
 
-    def xpath(self, *args, **kwargs):
-        return xpath(self.root, *args, **kwargs)
+    def xpath(self, query, parser=None, first=False):
+        """Run XPath query. Optionally, cast result type, take first value.
+        """
+        res = self.root.xpath(query, namespaces=self.nsmap)
+
+        if parser:
+            res = list(map(parser, res))
+
+        if first:
+            res = res[0] if res else None
+
+        return res
 
 
 class Agent(Tree):
