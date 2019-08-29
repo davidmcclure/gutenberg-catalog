@@ -5,10 +5,9 @@ import ujson
 import glob
 
 from lxml import etree
-from cached_property import cached_property
 from tqdm import tqdm
 
-from .utils import safe_property, parse_numeric, split_mime, parse_datetime
+from .utils import cached_property, parse_numeric, split_mime, parse_datetime
 from . import logger
 
 
