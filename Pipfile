@@ -12,6 +12,7 @@ maya = "*"
 ujson = "*"
 tqdm = "*"
 click = "*"
+cached-property = "*"
 
 [dev-packages]
 

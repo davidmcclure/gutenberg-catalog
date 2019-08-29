@@ -5,6 +5,7 @@ import ujson
 import glob
 
 from lxml import etree
+from cached_property import cached_property
 from tqdm import tqdm
 
 from .utils import safe_property, parse_numeric, split_mime, parse_datetime
@@ -108,12 +109,14 @@ class BookXML(Tree):
     #     'downloads', 'publisher', 'language',)
 
     def __repr__(self):
-        return '%s<%d>' % (self.__class__.__name__, self.id())
+        return '%s<%d>' % (self.__class__.__name__, self.id)
 
+    @cached_property
     def id(self):
         raw = self.xpath('//pgterms:ebook/@rdf:about', first=True)
         return int(raw.split('/')[-1])
 
+    @cached_property
     def title(self):
         return self.xpath('//dcterms:title/text()', first=True)
 
@@ -123,22 +126,17 @@ class BookXML(Tree):
         for el in self.xpath('//dcterms:creator/pgterms:agent'):
             yield Agent.from_element(el)
 
-    @property
+    @cached_property
     def creators(self):
         return [c.row() for c in self.creators_iter()]
 
-    #
-    # @safe_property.cached
-    # def creators(self):
-    #     return list(self.creators_iter())
-    #
-    # @safe_property.cached
-    # def author(self):
-    #     return dict(self.creators[0])['name']
-    #
-    # @safe_property
-    # def surname(self):
-    #     return self.author.split(', ')[0]
+    @cached_property
+    def first_author(self):
+        return self.creators[0]['name']
+
+    @cached_property
+    def first_author_surname(self):
+        return self.first_author.split(', ')[0]
     #
     # @safe_property
     # def subjects(self):
