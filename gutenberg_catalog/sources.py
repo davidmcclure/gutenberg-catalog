@@ -51,54 +51,24 @@ class Tree:
 
 class Agent(Tree):
 
-    def terms(self):
-        return self.xpath('pgterms:*')
-
-    def term_names(self):
-        return [etree.QName(el.tag).localname for el in self.terms()]
-
+    @cached_property
     def name(self):
         return self.xpath('//pgterms:name/text()', first=True)
 
-    def aliases(self):
-        return self.xpath('//pgterms:alias/text()')
+    @cached_property
+    def given_name_surname(self):
+        return self.name.split(', ', 1)
 
-    def birthdate(self):
-        return self.xpath('//pgterms:birthdate/text()', int, first=True)
+    @cached_property
+    def given_name(self):
+        return self.given_name_surname[1]
 
-    def deathdate(self):
-        return self.xpath('//pgterms:deathdate/text()', int, first=True)
+    @cached_property
+    def surname(self):
+        return self.given_name_surname[0]
 
-    def webpage(self):
-        return self.xpath('//pgterms:webpage/@rdf:resource', first=True)
-
-    def row(self):
-        return dict(
-            name=self.name(),
-            aliases=self.aliases(),
-            birthdate=self.birthdate(),
-            deathdate=self.deathdate(),
-            webpage=self.webpage(),
-        )
-
-
-# class Format(Tree):
-#
-#     @safe_property
-#     def url(self):
-#         return self.xpath('@rdf:about', first=True)
-#
-#     @safe_property
-#     def formats(self):
-#         return self.xpath('dcterms:format//rdf:value/text()')
-#
-#     @safe_property
-#     def extent(self):
-#         return self.xpath('dcterms:extent/text()', first=True,
-#             parser=parse_numeric)
-#
-#     def row(self):
-#         return dict(url=self.url, formats=self.formats, extent=self.extent)
+    def to_dict(self):
+        return dict(given_name=self.given_name, surname=self.surname)
 
 
 class BookXML(Tree):
@@ -119,23 +89,37 @@ class BookXML(Tree):
     def title(self):
         return self.xpath('//dcterms:title/text()', first=True)
 
-    def creators_iter(self):
-        """Parse each <dcterms:creator>
-        """
-        for el in self.xpath('//dcterms:creator/pgterms:agent'):
-            yield Agent.from_element(el)
-
     @cached_property
-    def creators(self):
-        return [c.row() for c in self.creators_iter()]
+    def agents(self):
+        return [
+            Agent.from_element(el)
+            for el in self.xpath('//dcterms:creator/pgterms:agent')
+        ]
 
-    @cached_property
-    def first_author(self):
-        return self.creators[0]['name']
+    def to_dict(self):
+        return dict(
+            id=self.id,
+            title=self.title,
+            authors=[a.to_dict() for a in self.agents]
+        )
 
-    @cached_property
-    def first_author_surname(self):
-        return self.first_author.split(', ')[0]
+    # def creators_iter(self):
+    #     """Parse each <dcterms:creator>
+    #     """
+    #     for el in self.xpath('//dcterms:creator/pgterms:agent'):
+    #         yield Agent.from_element(el)
+    #
+    # @cached_property
+    # def creators(self):
+    #     return [c.row() for c in self.creators_iter()]
+    #
+    # @cached_property
+    # def first_author(self):
+    #     return self.creators[0]['name']
+    #
+    # @cached_property
+    # def first_author_surname(self):
+    #     return self.first_author.split(', ')[0]
     #
     # @safe_property
     # def subjects(self):
